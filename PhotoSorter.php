@@ -7,6 +7,7 @@ class PhotoSorter
 {
     const VERBOSE_MAX = 5;
     public $simulate = true;
+    public $timeshiftRxp = '~(/TIMESHIFT/\d+/)~';
     public $verbose = 5;
 
     private function my_windows($file)
@@ -43,10 +44,8 @@ class PhotoSorter
         return $res;
     }
 
-    protected function photo_copier()
+    protected function photo_copier($ffile, $dest_dir)
     {
-        $ffile = func_get_arg(0);
-        $dest_dir = func_get_arg(1);
         $exif = exif_read_data($ffile);
         $date = '';
         if ($exif !== false) {
@@ -73,6 +72,12 @@ class PhotoSorter
             $date = date('Y-m-d', filemtime($ffile));
         }
         $dest_dir .= '/' . $date . '/';
+        if (preg_match($this->timeshiftRxp, $ffile, $timeshiftDirArr)) {
+            $dest_dir .= $timeshiftDirArr[1];
+            if ($this->verbose >= static::VERBOSE_MAX) {
+                print "Timeshift detected! dest_dir: $dest_dir\n";
+            }
+        }
         @mkdir($dest_dir, 0777, true);
         clearstatcache();
         $name = basename($ffile);
