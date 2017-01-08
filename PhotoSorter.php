@@ -5,6 +5,10 @@ namespace PhotoSorter;
 
 class PhotoSorter
 {
+    const VERBOSE_MAX = 5;
+    public $simulate = true;
+    public $verbose = 5;
+
     private function my_windows($file)
     {
         $p = [
@@ -82,22 +86,34 @@ class PhotoSorter
                 return -1;
             }
             if (!file_exists($dest_dir . $name)) {
-                $m = copy($ffile, $dest_dir . $name);
-
+                if (!$this->simulate) {
+                    copy($ffile, $dest_dir . $name);
+                }
                 if (0) {
                     system("copy " . $this->my_windows($ffile) . " " . $this->my_windows($dest_dir));
                 }
-                clearstatcache();
-                $m = file_exists($dest_dir . $name);
+                if (!$this->simulate) {
+                    clearstatcache();
+                    $m = file_exists($dest_dir . $name);
+                } else {
+                    $m = true;
+                }
                 if (!$m) {
                     print "Failed to copy from $ffile to $dest_dir" . "$name\n";
                     return 0;
                 }
-                $dt = filemtime($ffile);
-                if ($dt !== false) {
-                    touch($dest_dir . $name, $dt);
+                if (!$this->simulate) {
+                    $dt = filemtime($ffile);
+                    if ($dt !== false) {
+                        touch($dest_dir . $name, $dt);
+                    }
                 }
-                return "File $name succsesfuly copied to " . $dest_dir . $name . "\n";
+                $message = ($this->simulate ? '[simulate] '
+                        : '') . "File $name succsesfuly copied to " . $dest_dir . $name . "\n";
+                if ($this->verbose >= static::VERBOSE_MAX) {
+                    print $message;
+                }
+                return $message;
             }
             return 0;
         } else {
