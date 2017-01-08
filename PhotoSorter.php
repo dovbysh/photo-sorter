@@ -5,6 +5,23 @@ namespace PhotoSorter;
 
 class PhotoSorter
 {
+    private function my_windows($file)
+    {
+        $p = [
+            /**/
+            '~\\/~',
+            /**/
+            '~/~',
+        ];
+        $r = [
+            /**/
+            '\\',
+            /**/
+            '\\',
+        ];
+        return preg_replace($p, $r, $file);
+    }
+
     protected function getMediaDate($file, $mediaInfo = '/usr/bin/mediainfo')
     {
         $output = [];
@@ -20,38 +37,6 @@ class PhotoSorter
             }
         }
         return $res;
-    }
-
-    public function dir_reader($source_dir, $dest_dir, $filter, &$message, $exclude_filter = [])
-    {
-        if ($handle = opendir($source_dir)) {
-            /* This is the correct way to loop over the directory. */
-            while (false !== ($file = readdir($handle))) {
-                if ($file != '.' && $file != '..' && is_dir($source_dir . '/' . $file)) {
-                    $this->dir_reader($source_dir . '/' . $file,  $dest_dir, $filter, $message, $exclude_filter);
-                }
-                if ($exclude_filter) {
-                    foreach ($exclude_filter as $exc) {
-                        if (preg_match($exc, $file)) {
-                            print "Skipped $file matched $exc\n";
-                            continue 2;
-                        }
-                    }
-                }
-                if ($file != '.' && $file != '..' && is_file($source_dir . '/' . $file) && preg_match($filter, $file)) {
-                    $m = $this->photo_copier($source_dir . '/' . $file, $dest_dir);
-                    if (!$m) {
-                        print "^Skipped...\n";
-                    } else {
-                        if ($m != -1) {
-                            $message .= $m;
-                        }
-                    }
-                }
-            }
-
-            closedir($handle);
-        }
     }
 
     protected function photo_copier()
@@ -99,7 +84,7 @@ class PhotoSorter
             if (!file_exists($dest_dir . $name)) {
                 $m = copy($ffile, $dest_dir . $name);
 
-                if (0){
+                if (0) {
                     system("copy " . $this->my_windows($ffile) . " " . $this->my_windows($dest_dir));
                 }
                 clearstatcache();
@@ -121,21 +106,36 @@ class PhotoSorter
         }
     }
 
-    private function my_windows($file)
+    public function dir_reader($source_dir, $dest_dir, $filter, &$message, $exclude_filter = [])
     {
-        $p = [
-            /**/
-            '~\\/~',
-            /**/
-            '~/~',
-        ];
-        $r = [
-            /**/
-            '\\',
-            /**/
-            '\\',
-        ];
-        return preg_replace($p, $r, $file);
+        if ($handle = opendir($source_dir)) {
+            /* This is the correct way to loop over the directory. */
+            while (false !== ($file = readdir($handle))) {
+                if ($file != '.' && $file != '..' && is_dir($source_dir . '/' . $file)) {
+                    $this->dir_reader($source_dir . '/' . $file, $dest_dir, $filter, $message, $exclude_filter);
+                }
+                if ($exclude_filter) {
+                    foreach ($exclude_filter as $exc) {
+                        if (preg_match($exc, $file)) {
+                            print "Skipped $file matched $exc\n";
+                            continue 2;
+                        }
+                    }
+                }
+                if ($file != '.' && $file != '..' && is_file($source_dir . '/' . $file) && preg_match($filter, $file)) {
+                    $m = $this->photo_copier($source_dir . '/' . $file, $dest_dir);
+                    if (!$m) {
+                        print "^Skipped...\n";
+                    } else {
+                        if ($m != -1) {
+                            $message .= $m;
+                        }
+                    }
+                }
+            }
+
+            closedir($handle);
+        }
     }
 
 }
