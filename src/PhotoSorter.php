@@ -9,42 +9,89 @@ class PhotoSorter
     public $simulate = true;
     public $timeshiftRxp = '~(/TIMESHIFT/\d+/)~';
     public $verbose = 5;
+    private $filter = '~.+~i';
+    private $excludeFilter = ['~.+\.int~i', '~.+\.bnp~i', '~.+\.bin~i', '~.+\.inp~i', '~IndexerVolumeGuid~', '~WPSettings.dat~', '~SONYCARD.IND~'];
+    private $messages;
+    private $sourceDirectory;
+    private $destinationDirectory;
 
-    private function my_windows($file)
+    public function __construct(string $sourceDirectory = '', string $destinationDirectory = '')
     {
-        $p = [
-            /**/
-            '~\\/~',
-            /**/
-            '~/~',
-        ];
-        $r = [
-            /**/
-            '\\',
-            /**/
-            '\\',
-        ];
-        return preg_replace($p, $r, $file);
+        $this->messages = '';
+        $this->setDestinationDirectory($destinationDirectory);
+        $this->setSourceDirectory($sourceDirectory);
     }
 
-    protected function getMediaDate($file, $mediaInfo = '/usr/bin/mediainfo')
+    /**
+     * @param mixed $sourceDirectory
+     */
+    public function setSourceDirectory(string $sourceDirectory)
     {
-        $output = [];
-        exec($mediaInfo . ' ' . $file, $output);
-        $res = null;
-        if ($output) {
-            foreach ($output as $o) {
-                $pairs = preg_split('~\:~', $o, 2);
-                if (!empty($pairs[0]) && !empty($pairs[1]) && preg_match('~Tagged date~i', $pairs[0]) && strtotime($pairs[1])) {
-                    $res = strtotime($pairs[1]);
-                    break;
+        $this->sourceDirectory = $sourceDirectory;
+    }
+
+    /**
+     * @param string $filter
+     */
+    public function setFilter(string $filter)
+    {
+        $this->filter = $filter;
+    }
+
+    /**
+     * @param array $excludeFilter
+     */
+    public function setExcludeFilter(array $excludeFilter)
+    {
+        $this->excludeFilter = $excludeFilter;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessages(): string
+    {
+        return $this->messages;
+    }
+
+    public function run()
+    {
+        $this->directoryIterate($this->sourceDirectory);
+    }
+
+    protected function directoryIterate($source_dir = '')
+    {
+        if ($handle = opendir($source_dir)) {
+            /* This is the correct way to loop over the directory. */
+            while (false !== ($file = readdir($handle))) {
+                if ($file != '.' && $file != '..' && is_dir($source_dir . '/' . $file)) {
+                    $this->directoryIterate($source_dir . '/' . $file);
+                }
+                if ($this->excludeFilter) {
+                    foreach ($this->excludeFilter as $exc) {
+                        if (preg_match($exc, $file)) {
+                            print "Skipped $file matched $exc\n";
+                            continue 2;
+                        }
+                    }
+                }
+                if ($file != '.' && $file != '..' && is_file($source_dir . '/' . $file) && preg_match($this->filter, $file)) {
+                    $m = $this->photoCopy($source_dir . '/' . $file);
+                    if (!$m) {
+                        print "^Skipped...\n";
+                    } else {
+                        if ($m != -1) {
+                            $this->messages .= $m;
+                        }
+                    }
                 }
             }
+
+            closedir($handle);
         }
-        return $res;
     }
 
-    protected function photo_copier($ffile, $dest_dir)
+    protected function photoCopy($ffile)
     {
         @$exif = exif_read_data($ffile);
         $date = '';
@@ -71,50 +118,46 @@ class PhotoSorter
         if (empty($date)) {
             $date = date('Y-m-d', filemtime($ffile));
         }
-        $dest_dir .= '/' . $date . '/';
+        $resultDestinationDirectory = $this->getDestinationDirectory() . '/' . $date . '/';
         if (preg_match($this->timeshiftRxp, $ffile, $timeshiftDirArr)) {
-            $dest_dir .= $timeshiftDirArr[1];
+            $resultDestinationDirectory .= $timeshiftDirArr[1];
             if ($this->verbose >= static::VERBOSE_MAX) {
-                print "Timeshift detected! dest_dir: $dest_dir\n";
+                print "Timeshift detected! dest_dir: $resultDestinationDirectory\n";
             }
         }
-        @mkdir($dest_dir, 0777, true);
+        @mkdir($resultDestinationDirectory, 0777, true);
         clearstatcache();
         $name = basename($ffile);
-        if (is_dir($dest_dir)) {
-            if (file_exists($dest_dir . $name) && filesize($dest_dir . $name) != filesize($ffile)) {
-                print "File $ffile ($dest_dir" . "$name) exists and has different size\n";
+        if (is_dir($resultDestinationDirectory)) {
+            if (file_exists($resultDestinationDirectory . $name) && filesize($resultDestinationDirectory . $name) != filesize($ffile)) {
+                print "File $ffile ($resultDestinationDirectory" . "$name) exists and has different size\n";
                 return 0;
             }
-            if (file_exists($dest_dir . $name) && filesize($dest_dir . $name) == filesize($ffile)) {
-                //print "File $dest_dir"."$name exists and has _same_ size\n";
+            if (file_exists($resultDestinationDirectory . $name) && filesize($resultDestinationDirectory . $name) == filesize($ffile)) {
                 return -1;
             }
-            if (!file_exists($dest_dir . $name)) {
+            if (!file_exists($resultDestinationDirectory . $name)) {
                 if (!$this->simulate) {
-                    copy($ffile, $dest_dir . $name);
-                }
-                if (0) {
-                    system("copy " . $this->my_windows($ffile) . " " . $this->my_windows($dest_dir));
+                    copy($ffile, $resultDestinationDirectory . $name);
                 }
                 if (!$this->simulate) {
                     clearstatcache();
-                    $m = file_exists($dest_dir . $name);
+                    $m = file_exists($resultDestinationDirectory . $name);
                 } else {
                     $m = true;
                 }
                 if (!$m) {
-                    print "Failed to copy from $ffile to $dest_dir" . "$name\n";
+                    print "Failed to copy from $ffile to $resultDestinationDirectory" . "$name\n";
                     return 0;
                 }
                 if (!$this->simulate) {
                     $dt = filemtime($ffile);
                     if ($dt !== false) {
-                        touch($dest_dir . $name, $dt);
+                        touch($resultDestinationDirectory . $name, $dt);
                     }
                 }
                 $message = ($this->simulate ? '[simulate] '
-                        : '') . "File $name succsesfuly copied to " . $dest_dir . $name . "\n";
+                        : '') . "File $name succsesfuly copied to " . $resultDestinationDirectory . $name . "\n";
                 if ($this->verbose >= static::VERBOSE_MAX) {
                     print $message;
                 }
@@ -122,41 +165,41 @@ class PhotoSorter
             }
             return 0;
         } else {
-            print "Can't create directory $dest_dir\n";
+            print "Can't create directory $resultDestinationDirectory\n";
             return 0;
         }
     }
 
-    public function dir_reader($source_dir, $dest_dir, $filter, &$message, $exclude_filter = [])
+    protected function getMediaDate($file, $mediaInfo = '/usr/bin/mediainfo')
     {
-        if ($handle = opendir($source_dir)) {
-            /* This is the correct way to loop over the directory. */
-            while (false !== ($file = readdir($handle))) {
-                if ($file != '.' && $file != '..' && is_dir($source_dir . '/' . $file)) {
-                    $this->dir_reader($source_dir . '/' . $file, $dest_dir, $filter, $message, $exclude_filter);
-                }
-                if ($exclude_filter) {
-                    foreach ($exclude_filter as $exc) {
-                        if (preg_match($exc, $file)) {
-                            print "Skipped $file matched $exc\n";
-                            continue 2;
-                        }
-                    }
-                }
-                if ($file != '.' && $file != '..' && is_file($source_dir . '/' . $file) && preg_match($filter, $file)) {
-                    $m = $this->photo_copier($source_dir . '/' . $file, $dest_dir);
-                    if (!$m) {
-                        print "^Skipped...\n";
-                    } else {
-                        if ($m != -1) {
-                            $message .= $m;
-                        }
-                    }
+        $output = [];
+        exec($mediaInfo . ' ' . $file, $output);
+        $res = null;
+        if ($output) {
+            foreach ($output as $o) {
+                $pairs = preg_split('~\:~', $o, 2);
+                if (!empty($pairs[0]) && !empty($pairs[1]) && preg_match('~Tagged date~i', $pairs[0]) && strtotime($pairs[1])) {
+                    $res = strtotime($pairs[1]);
+                    break;
                 }
             }
-
-            closedir($handle);
         }
+        return $res;
     }
 
+    /**
+     * @return string
+     */
+    public function getDestinationDirectory(): string
+    {
+        return $this->destinationDirectory;
+    }
+
+    /**
+     * @param mixed $destinationDirectory
+     */
+    public function setDestinationDirectory(string $destinationDirectory)
+    {
+        $this->destinationDirectory = $destinationDirectory;
+    }
 }

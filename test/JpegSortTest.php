@@ -61,12 +61,10 @@ class JpegSortTest extends TestCase
 
     public function testMoveA()
     {
-        $p = new PhotoSorter();
+        $p = new PhotoSorter($this->sourceDir, $this->destinationDir);
         $p->simulate = false;
         $p->verbose = 0;
-        $message = '';
-        $p->dir_reader($this->sourceDir, $this->destinationDir, '~.+~i', $message,
-            ['~.+\.int~i', '~.+\.bnp~i', '~.+\.bin~i', '~.+\.inp~i', '~IndexerVolumeGuid~', '~WPSettings.dat~', '~SONYCARD.IND~']);
+        $p->run();
         $this->assertFileExists($this->destinationDir . '/' . date('Y-m-d', $this->now) . '/a.jpg');
         $this->assertFileExists($this->destinationDir . '/' . date('Y-m-d', $this->date1) . '/' . basename($this->sDate1));
     }
