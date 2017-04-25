@@ -1,19 +1,24 @@
 {
-    "name": "dovbysh/photo_sorter",
-    "description": "Copy media files (basicaly your photo and video) from one location to another with creation folders by date of your files",
-    "type": "project",
-    "authors": [
-        {
-            "name": "Dovbyshko Andrey",
-            "email": "dovbysh@gmail.com"
-        }
-    ],
-    "autoload": {
-        "psr-4": {"dovbysh\\PhotoSorter\\": "src"}
-    },
-    "require": {},
-    "require-dev": {
-        "ext-gd": "^7.0",
-        "phpunit/phpunit": "^6.1"
+  "name": "dovbysh/photo_sorter",
+  "description": "Copy media files (basicaly your photo and video) from one location to another with creation folders by date of your files",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Dovbyshko Andrey",
+      "email": "dovbysh@gmail.com"
     }
+  ],
+  "autoload": {
+    "psr-4": {
+      "dovbysh\\PhotoSorter\\": "src"
+    }
+  },
+  "bin": [
+    "photo_sorter.php"
+  ],
+  "require": {},
+  "require-dev": {
+    "ext-gd": "^7.0",
+    "phpunit/phpunit": "^6.1"
+  }
 }

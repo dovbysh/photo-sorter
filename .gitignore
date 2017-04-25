@@ -5,3 +5,4 @@ gen
 
 /vendor/
 photo_sorter.phar
+composer.lock
