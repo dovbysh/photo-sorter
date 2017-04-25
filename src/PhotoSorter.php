@@ -46,7 +46,7 @@ class PhotoSorter
 
     protected function photo_copier($ffile, $dest_dir)
     {
-        $exif = exif_read_data($ffile);
+        @$exif = exif_read_data($ffile);
         $date = '';
         if ($exif !== false) {
             if (array_key_exists('DateTime', $exif) && strtotime($exif['DateTime']) > 0) {

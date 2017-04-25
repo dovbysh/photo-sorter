@@ -12,5 +12,8 @@
         "psr-4": {"dovbysh\\PhotoSorter\\": "src"}
     },
     "require": {},
-    "require-dev": {}
+    "require-dev": {
+        "ext-gd": "^7.0",
+        "phpunit/phpunit": "^6.1"
+    }
 }
