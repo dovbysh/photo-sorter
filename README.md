@@ -6,5 +6,6 @@ From source:
 
 Clone or download. Install phar-composer https://github.com/clue/phar-composer.
 ```
+composer install --no-dev
 phar-composer install
 ```
