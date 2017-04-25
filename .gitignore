@@ -2,3 +2,6 @@
 *.iml
 out
 gen
+
+/vendor/
+photo_sorter.phar

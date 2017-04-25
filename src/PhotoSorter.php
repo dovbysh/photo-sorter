@@ -1,6 +1,6 @@
 <?php
 
-namespace PhotoSorter;
+namespace dovbysh\PhotoSorter;
 
 
 class PhotoSorter
