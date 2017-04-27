@@ -6,6 +6,10 @@ From source:
 
 Clone or download. Install phar-composer https://github.com/clue/phar-composer.
 ```
-composer install --no-dev
-phar-composer install
+make
+```
+
+### Docker
+```
+docker run -it -v SOURCE_DIRECTORY:/psrc -v DESTINATION_DIR:/pdst --user $UID photo_sorter
 ```
