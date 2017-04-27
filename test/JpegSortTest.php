@@ -41,7 +41,8 @@ class JpegSortTest extends TestCase
         imagefill($im, 0, 0, 255);
         imagejpeg($im, $this->sA);
         $dt = date('Y:m:d H:i:s', $this->now);
-        `{$this->exiftool} -tagsfromfile /home/dovbysh/photo_sorter_test/IMG_0081.JPG -exif {$this->sA}`;
+        $dataDir = __DIR__ . '/data/';
+        `{$this->exiftool} -tagsfromfile {$dataDir}a.jpg -exif {$this->sA}`;
         `{$this->exiftool} -alldates="$dt" {$this->sA}`;
         `rm -f {$this->sA}_original`;
 
