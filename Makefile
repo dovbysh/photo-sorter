@@ -1,8 +1,13 @@
-.PHONY: all clean install uninstall clean.docker
+.PHONY: all clean install uninstall clean.docker dev test
 
 all: docker
 
 clean: clean.vendor
+
+dev: composer-dev
+
+test: dev
+	vendor/bin/phpunit --coverage-html out
 
 clean.docker:
 	docker ps -aq | xargs docker rm -f
@@ -15,6 +20,9 @@ clean.vendor:
 
 composer-prod: clean.vendor
 	composer install --no-dev
+
+composer-dev:
+	composer install
 
 phar: composer-prod
 	phar-composer build
